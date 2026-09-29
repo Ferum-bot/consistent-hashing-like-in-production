@@ -1,0 +1,10 @@
+{
+  "running": true,
+  "rps": 1000,
+  "read_ratio": 0.7,
+  "deposit_share": 0.5,
+  "read_zipf_s": 0,
+  "write_zipf_s": 1.1,
+  "hot_share": 0.05,
+  "verify_rps": 50
+}

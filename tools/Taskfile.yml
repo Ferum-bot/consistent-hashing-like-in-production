@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  chctl:
+    desc: Run chctl, everything after -- goes to chctl, paths are relative to tools, e.g. task chctl -- status
+    cmds:
+      - go run ./chctl {{.CLI_ARGS}}
+
+  datagen:
+    desc: Generate the users snapshot
+    cmds:
+      - go run ./datagen {{.CLI_ARGS}}
+
+  test:
+    desc: Run tools tests
+    cmds:
+      - go test ./...
+
+  vet:
+    desc: Run go vet on tools
+    cmds:
+      - go vet ./...

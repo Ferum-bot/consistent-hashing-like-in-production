@@ -1,0 +1,2927 @@
+{
+  "uid": "cluster",
+  "title": "Кластер кошельков",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Ноды",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Всего пользователей",
+          "description": "Сумма пользователей на всех wallet-нодах. Больше, чем в снапшоте, — где-то остались лишние копии.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 1,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(wallet_users)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Перекос нагрузки",
+          "description": "Во сколько раз самая загруженная нода получает больше запросов, чем в среднем по нодам с трафиком. 1 — нагрузка ровная.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 5,
+            "w": 6,
+            "h": 5
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(sum by (instance) (rate(wallet_http_requests_total{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval]))) / avg(sum by (instance) (rate(wallet_http_requests_total{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval])) > 0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 2,
+              "noValue": "нет нагрузки"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 4,
+          "type": "bargauge",
+          "title": "Доля пользователей по нодам",
+          "description": "Какая доля всех пользователей реально лежит на каждой ноде.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 1,
+            "w": 9,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_by_label(wallet_users / scalar(sum(wallet_users)), \"instance\")",
+              "legendFormat": "{{instance}}",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "displayMode": "basic",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "valueMode": "text",
+            "namePlacement": "top",
+            "sizing": "manual",
+            "minVizHeight": 36,
+            "maxVizHeight": 36,
+            "minVizWidth": 8,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            },
+            "legend": {
+              "showLegend": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "min": 0,
+              "max": 1,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-1"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#3987e5"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-2"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d95926"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-3"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#199e70"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-4"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#c98500"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-5"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d55181"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Пользователи на нодах",
+          "description": "Сколько пользователей на каждой ноде во времени. Видно загрузку и перенос данных.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 15,
+            "y": 1,
+            "w": 9,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "wallet_users",
+              "legendFormat": "{{instance}}",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-1"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#3987e5"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-2"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d95926"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-3"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#199e70"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-4"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#c98500"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-5"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d55181"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Запросы к нодам",
+          "description": "Операции с кошельками, которые дошли до каждой ноды.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 10,
+            "w": 8,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (instance) (rate(wallet_http_requests_total{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval]))",
+              "legendFormat": "{{instance}}",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-1"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#3987e5"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-2"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d95926"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-3"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#199e70"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-4"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#c98500"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-5"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d55181"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Ответы нод по кодам",
+          "description": "Что отвечают ноды: 200 — успех, 404 — пользователя или кошелька на ноде нет, 409 — старая версия топологии, 422 — не хватает денег.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 8,
+            "y": 10,
+            "w": 8,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (code) (rate(wallet_http_requests_total{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval]))",
+              "legendFormat": "{{code}}",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 60,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "200"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#0ca30c"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "204"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#0ca30c"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "404"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#ec835a"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "409"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "422"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "400"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "502"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "503"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "500"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "p99 нод",
+          "description": "99-й перцентиль времени обработки операции с кошельком на каждой ноде.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 10,
+            "w": 8,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.99, sum by (le, instance) (rate(wallet_http_request_duration_seconds_bucket{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval])))",
+              "legendFormat": "{{instance}}",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-1"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#3987e5"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-2"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d95926"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-3"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#199e70"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-4"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#c98500"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-5"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d55181"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 9,
+          "type": "stat",
+          "title": "Версия топологии на нодах",
+          "description": "Самая свежая версия топологии, которую видела каждая нода. Роутер с версией ниже ноды получит 409.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 19,
+            "w": 24,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_by_label(wallet_topology_version, \"instance\")",
+              "legendFormat": "{{instance}}",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value_and_name",
+            "justifyMode": "center",
+            "orientation": "vertical",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Роутеры",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 11,
+          "type": "stat",
+          "title": "Версия топологии",
+          "description": "Какую версию топологии применил каждый роутер. Разные числа — роутеры видят кластер по-разному.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 24,
+            "w": 6,
+            "h": 5
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_by_label(router_topology_version, \"instance\")",
+              "legendFormat": "{{instance}}",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value_and_name",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0,
+              "noValue": "нет роутеров"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 12,
+          "type": "stat",
+          "title": "Переехало при последней смене",
+          "description": "Доля пользователей, у которых сменилась нода при последней смене топологии. Берётся с роутера на самой новой версии.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 24,
+            "w": 6,
+            "h": 5
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(router_moved_share and on (instance) (router_topology_version == scalar(max(router_topology_version))))",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 1,
+              "noValue": "нет роутеров"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 13,
+          "type": "stat",
+          "title": "Перекос",
+          "description": "Во сколько раз самая загруженная нода получает больше пользователей, чем в среднем. 1 — идеально ровно. Веса нод не учитываются: при весах перекос задан намеренно.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 24,
+            "w": 6,
+            "h": 5
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(max by (instance) (router_key_share and on (instance) (router_topology_version == scalar(max(router_topology_version)))) / avg by (instance) (router_key_share and on (instance) (router_topology_version == scalar(max(router_topology_version)))))",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 2,
+              "noValue": "нет роутеров"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 14,
+          "type": "stat",
+          "title": "Точек на кольце",
+          "description": "Сколько точек на кольце у самой новой топологии среди роутеров. У стратегий без кольца — число нод.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 24,
+            "w": 6,
+            "h": 5
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(router_ring_points and on (instance) (router_topology_version == scalar(max(router_topology_version))))",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0,
+              "noValue": "нет роутеров"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 15,
+          "type": "stat",
+          "title": "Перенос",
+          "description": "Идёт ли сейчас перенос данных: новая топология подготовлена, но ещё не включена.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 6,
+            "h": 7
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(router_migration_active)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "нет"
+                    },
+                    "1": {
+                      "text": "идёт"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0,
+              "noValue": "нет роутеров"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 16,
+          "type": "stat",
+          "title": "Перенесено за период",
+          "description": "Сколько пользователей скопировано на новые ноды за выбранный период.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 29,
+            "w": 6,
+            "h": 7
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(router_migration_copied_users_total[$__range])) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 17,
+          "type": "timeseries",
+          "title": "Записи на шлагбауме",
+          "description": "Сколько записей ждут окончания переноса и сколько в секунду получили отказ, потому что ждали дольше лимита.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 29,
+            "w": 12,
+            "h": 7
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(router_gate_waiting)",
+              "legendFormat": "ждут",
+              "instant": false,
+              "range": true
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(router_gate_rejected_total[$__rate_interval])) or vector(0)",
+              "legendFormat": "отказано в секунду",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "ждут"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#9085e9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "отказано в секунду"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 18,
+          "type": "timeseries",
+          "title": "Отклонено нодами по роутерам",
+          "description": "Сколько запросов в секунду ноды отклонили с кодом 409, отдельно по каждому роутеру. Растёт у роутера, который отстал от текущей топологии.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 36,
+            "w": 24,
+            "h": 7
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (instance) (rate(router_upstream_requests_total{code=\"409\"}[$__rate_interval])) or (sum by (instance) (router_topology_version) * 0)",
+              "legendFormat": "{{instance}}",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "router-1"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#9085e9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "router-2"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#e66767"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 19,
+          "type": "bargauge",
+          "title": "Ожидаемая доля по стратегии",
+          "description": "Сколько пользователей должно достаться каждой ноде по самой новой топологии среди роутеров. Считается выборкой ключей, ещё до загрузки данных.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 43,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_by_label(max by (node) (router_key_share and on (instance) (router_topology_version == scalar(max(router_topology_version)))), \"node\")",
+              "legendFormat": "{{node}}",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "displayMode": "basic",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "valueMode": "text",
+            "namePlacement": "top",
+            "sizing": "manual",
+            "minVizHeight": 36,
+            "maxVizHeight": 36,
+            "minVizWidth": 8,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            },
+            "legend": {
+              "showLegend": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "min": 0,
+              "max": 1,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-1"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#3987e5"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-2"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d95926"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-3"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#199e70"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-4"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#c98500"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wallet-5"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d55181"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 20,
+          "type": "timeseries",
+          "title": "Доля промахов при чтении",
+          "description": "Доля чтений через роутеры, на которые нода ответила 404: пользователя нет на ноде, куда его отправил роутер.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 43,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "(sum(rate(router_http_requests_total{route=\"GET /wallet/{userID}\",code=\"404\"}[$__rate_interval])) or vector(0)) / sum(rate(router_http_requests_total{route=\"GET /wallet/{userID}\"}[$__rate_interval]))",
+              "legendFormat": "промахи",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": false,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "#ec835a"
+              },
+              "max": 1
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "Ответы роутеров по кодам",
+          "description": "Что получают клиенты через роутеры: 200 — успех, 404 — пользователя нет на ноде, куда его отправил роутер, 409 — старая версия топологии, 422 — не хватает денег, 5xx — нода недоступна.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 52,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (code) (rate(router_http_requests_total{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval]))",
+              "legendFormat": "{{code}}",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 60,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "200"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#0ca30c"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "204"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#0ca30c"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "404"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#ec835a"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "409"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "422"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "400"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "502"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "503"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "500"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 22,
+          "type": "timeseries",
+          "title": "p99 через роутер",
+          "description": "99-й перцентиль времени ответа операций с кошельками через роутер.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 52,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.99, sum by (le) (rate(router_http_request_duration_seconds_bucket{route=~\"(GET|POST) /wallet/.*\"}[$__rate_interval])))",
+              "legendFormat": "p99",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": false,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "#9085e9"
+              }
+            },
+            "overrides": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "row",
+      "title": "Клиенты",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 2,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 24,
+          "type": "stat",
+          "title": "Параметры нагрузки",
+          "description": "Текущие настройки loadgen. Меняются командой task load:set.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 62,
+            "w": 24,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_by_label(loadgen_profile{param=~\"target_rps|read_ratio|read_zipf_s|write_zipf_s|hot_share\"}, \"param\")",
+              "legendFormat": "{{param}}",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value_and_name",
+            "justifyMode": "center",
+            "orientation": "vertical",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 2
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "target_rps"
+                },
+                "properties": [
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 25,
+          "type": "timeseries",
+          "title": "Нагрузка",
+          "description": "Сколько операций в секунду loadgen должен отправлять, сколько реально отправил и сколько не успел из-за занятых воркеров.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 66,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(loadgen_profile{param=\"target_rps\"})",
+              "legendFormat": "задано",
+              "instant": false,
+              "range": true
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(loadgen_requests_total{op!=\"verify\"}[$__rate_interval]))",
+              "legendFormat": "отправлено",
+              "instant": false,
+              "range": true
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(loadgen_dropped_total[$__rate_interval]))",
+              "legendFormat": "не успели",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "задано"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#898781"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "задано"
+                },
+                "properties": [
+                  {
+                    "id": "custom.lineStyle",
+                    "value": {
+                      "fill": "dash",
+                      "dash": [
+                        10,
+                        10
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "отправлено"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#9085e9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "не успели"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#ec835a"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 26,
+          "type": "timeseries",
+          "title": "p99 глазами клиента",
+          "description": "99-й перцентиль времени от момента, когда операция должна была уйти, до ответа. Очередь внутри loadgen тоже считается.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 66,
+            "w": 12,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.99, sum by (le) (rate(loadgen_request_duration_seconds_bucket{op=\"read\"}[$__rate_interval])))",
+              "legendFormat": "чтение",
+              "instant": false,
+              "range": true
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.99, sum by (le) (rate(loadgen_request_duration_seconds_bucket{op=~\"deposit|withdraw\"}[$__rate_interval])))",
+              "legendFormat": "запись",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "чтение"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#9085e9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "запись"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#e66767"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "row",
+      "title": "Деньги",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 28,
+          "type": "stat",
+          "title": "Сверено",
+          "description": "Чтения, где сервис вернул ровно то, что ожидает loadgen.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 76,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(loadgen_balance_checks_total{result=\"ok\"}[$__range])) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 29,
+          "type": "stat",
+          "title": "Денег меньше",
+          "description": "Сервис показывает меньше денег, чем клиент положил: пополнения потерялись.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 5,
+            "y": 76,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(loadgen_balance_checks_total{result=\"lost\"}[$__range])) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "transparent",
+                    "value": null
+                  },
+                  {
+                    "color": "#d03b3b",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 30,
+          "type": "stat",
+          "title": "Денег больше",
+          "description": "Сервис показывает больше денег, чем должно остаться: списания потерялись, клиент тратит одни деньги дважды.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 10,
+            "y": 76,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(loadgen_balance_checks_total{result=\"extra\"}[$__range])) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "transparent",
+                    "value": null
+                  },
+                  {
+                    "color": "#fab219",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 31,
+          "type": "stat",
+          "title": "Пользователь пропал",
+          "description": "Сервис ответил 404 на пользователя, который существует.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 15,
+            "y": 76,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(loadgen_balance_checks_total{result=\"missing\"}[$__range])) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "transparent",
+                    "value": null
+                  },
+                  {
+                    "color": "#ec835a",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 32,
+          "type": "stat",
+          "title": "Неопределённые",
+          "description": "Пользователи, по которым операция оборвалась без ответа. Их не сверяем.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 20,
+            "y": 76,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max(loadgen_uncertain_users) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "none",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "wideLayout": true,
+            "showPercentChange": false
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "text",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 33,
+          "type": "timeseries",
+          "title": "Расхождения балансов",
+          "description": "Сколько сверок в секунду находит расхождение с ожидаемым балансом, по типам.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 80,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(loadgen_balance_checks_total{result=\"lost\"}[$__rate_interval])) or vector(0)",
+              "legendFormat": "денег меньше",
+              "instant": false,
+              "range": true
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(loadgen_balance_checks_total{result=\"extra\"}[$__rate_interval])) or vector(0)",
+              "legendFormat": "денег больше",
+              "instant": false,
+              "range": true
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(loadgen_balance_checks_total{result=\"missing\"}[$__rate_interval])) or vector(0)",
+              "legendFormat": "пользователь пропал",
+              "instant": false,
+              "range": true
+            }
+          ],
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "lineInterpolation": "linear",
+                "spanNulls": false,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "денег меньше"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#d03b3b"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "денег больше"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#fab219"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "пользователь пропал"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#ec835a"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

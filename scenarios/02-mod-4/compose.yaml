@@ -1,0 +1,7 @@
+name: consistent-hashing
+
+include:
+  - ../../infra/compose.yaml
+  - ../../services/wallet/compose.yaml
+  - ../../services/router/compose.yaml
+  - ../../services/loadgen/compose.yaml

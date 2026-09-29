@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build wallet binary into bin/
+    cmds:
+      - go build -o bin/wallet ./cmd/service
+
+  run:
+    desc: Run wallet locally with config.yaml
+    cmds:
+      - go run ./cmd/service -config config.yaml
+
+  test:
+    desc: Run wallet tests
+    cmds:
+      - go test ./...
+
+  vet:
+    desc: Run go vet on wallet
+    cmds:
+      - go vet ./...

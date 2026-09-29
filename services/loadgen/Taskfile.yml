@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build loadgen binary into bin/
+    cmds:
+      - go build -o bin/loadgen ./cmd/service
+
+  run:
+    desc: Run loadgen locally against routers on localhost
+    cmds:
+      - go run ./cmd/service -config config.yaml
+
+  test:
+    desc: Run loadgen tests
+    cmds:
+      - go test ./...
+
+  vet:
+    desc: Run go vet on loadgen
+    cmds:
+      - go vet ./...

@@ -1,0 +1,140 @@
+version: '3'
+
+vars:
+  PROJECT: consistent-hashing
+
+includes:
+  wallet:
+    taskfile: ./services/wallet
+    dir: ./services/wallet
+  router:
+    taskfile: ./services/router
+    dir: ./services/router
+  loadgen:
+    taskfile: ./services/loadgen
+    dir: ./services/loadgen
+  libs:
+    taskfile: ./services/libs
+    dir: ./services/libs
+  tools:
+    taskfile: ./tools
+    dir: ./tools
+
+tasks:
+  scenario:
+    desc: Switch the stand to a scenario from scenarios/, e.g. task scenario -- 01-mod-3
+    vars:
+      DIR: scenarios/{{.CLI_ARGS}}
+    preconditions:
+      - sh: test -f {{.DIR}}/compose.yaml
+        msg: "no such scenario {{.CLI_ARGS}}, see scenarios/"
+    cmds:
+      - docker compose -f {{.DIR}}/compose.yaml up -d --remove-orphans
+      - if [ -f {{.DIR}}/topology.json ]; then cd tools && go run ./chctl apply ../{{.DIR}}/topology.json; fi
+
+  fresh:
+    desc: Switch to a scenario on clean data, e.g. task fresh -- 04-ring-16; the load stays paused
+    cmds:
+      - task: scenario
+      - task: reset
+      - task: bootstrap
+      - task: load:reload
+
+  build:
+    desc: Rebuild service images after code changes, scenarios never rebuild on their own
+    cmds:
+      - for file in services/*/compose.yaml; do docker compose -f $file build; done
+
+  down:
+    desc: Stop the stand
+    cmds:
+      - docker compose -p {{.PROJECT}} down --remove-orphans
+
+  logs:
+    desc: Follow logs, e.g. task logs -- router-1
+    cmds:
+      - docker compose -p {{.PROJECT}} logs -f {{.CLI_ARGS}}
+
+  status:
+    desc: Show what is running, routers and their topology, wallets, loadgen
+    dir: ./tools
+    cmds:
+      - go run ./chctl status
+
+  data:
+    desc: Generate the users snapshot into data/snapshot.ndjson
+    dir: ./tools
+    cmds:
+      - go run ./datagen -out ../data/snapshot.ndjson {{.CLI_ARGS}}
+
+  import:
+    desc: Load the snapshot straight into one wallet, e.g. task import -- http://localhost:9001
+    dir: ./tools
+    cmds:
+      - go run ./chctl import {{.CLI_ARGS}}
+
+  abort:
+    desc: Roll back an unfinished migration on every router
+    dir: ./tools
+    cmds:
+      - go run ./chctl abort
+
+  cleanup:
+    desc: Finish an interrupted migration, remove old copies once every router switched
+    dir: ./tools
+    cmds:
+      - go run ./chctl cleanup
+
+  bootstrap:
+    desc: Spread the snapshot over wallet nodes by the current topology
+    dir: ./tools
+    cmds:
+      - go run ./chctl bootstrap
+
+  reset:
+    desc: Pause the load and restart every running wallet node, they keep data in memory and come back empty
+    cmds:
+      - cd tools && go run ./chctl load pause
+      - docker compose -p {{.PROJECT}} ps --services | grep '^wallet-' | xargs docker compose -p {{.PROJECT}} restart
+
+  load:apply:
+    desc: Apply the load profile of a scenario, e.g. task load:apply -- 01-mod-3
+    dir: ./tools
+    cmds:
+      - go run ./chctl load apply ../scenarios/{{.CLI_ARGS}}/load.json
+
+  load:set:
+    desc: Change load profile, e.g. task load:set -- running=true rps=2000 write_zipf_s=1.3
+    dir: ./tools
+    cmds:
+      - go run ./chctl load set {{.CLI_ARGS}}
+
+  load:status:
+    desc: Show load profile and ledger
+    dir: ./tools
+    cmds:
+      - go run ./chctl load status
+
+  load:reload:
+    desc: Reload the loadgen ledger from the snapshot after reset and bootstrap
+    dir: ./tools
+    cmds:
+      - go run ./chctl load reload
+
+  test:
+    desc: Run tests in every module
+    cmds:
+      - task: libs:test
+      - task: wallet:test
+      - task: router:test
+      - task: loadgen:test
+      - task: tools:test
+
+  vet:
+    desc: Run go vet in every module
+    cmds:
+      - task: libs:vet
+      - task: wallet:vet
+      - task: router:vet
+      - task: loadgen:vet
+      - task: tools:vet

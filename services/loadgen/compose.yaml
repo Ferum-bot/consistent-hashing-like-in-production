@@ -1,0 +1,12 @@
+services:
+  loadgen:
+    build:
+      context: ..
+      dockerfile: loadgen/Dockerfile
+    image: chexp/loadgen
+    volumes:
+      - ../../data:/data:ro
+    environment:
+      TARGETS: http://router-1:8080,http://router-2:8080
+      SNAPSHOT_PATH: /data/snapshot.ndjson
+    ports: ["8090:8080"]

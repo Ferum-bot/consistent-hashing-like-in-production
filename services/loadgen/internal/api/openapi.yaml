@@ -1,0 +1,194 @@
+openapi: 3.0.3
+
+info:
+  title: Loadgen
+  version: 1.0.0
+  description: |
+    Генератор нагрузки. Изображает клиентов кошельков: читает, пополняет и списывает через роутеры
+    и сверяет балансы с книгой ожидаемых балансов, загруженной из того же снапшота, что и кластер.
+    После старта стоит на паузе.
+
+servers:
+  - url: /
+
+tags:
+  - name: Нагрузка
+    description: Как и с какой силой нагружать кластер
+  - name: Книга
+    description: Ожидаемые балансы пользователей
+  - name: Loadgen
+    description: Состояние процесса
+
+paths:
+  /config:
+    get:
+      tags: [Нагрузка]
+      summary: Текущие параметры нагрузки
+      responses:
+        "200":
+          description: Параметры
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      tags: [Нагрузка]
+      summary: Поменять параметры нагрузки
+      description: Передаются только те поля, которые надо поменять. Применяется сразу, без перезапуска.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Profile"
+            examples:
+              start:
+                summary: Запустить нагрузку
+                value: { "running": true, "rps": 1000 }
+              hot:
+                summary: Горячие ключи на чтение и запись
+                value: { "read_zipf_s": 1.2, "write_zipf_s": 1.3, "hot_share": 0.1 }
+              pause:
+                summary: Пауза
+                value: { "running": false }
+      responses:
+        "200":
+          description: Параметры после изменения
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Недопустимое значение
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "invalid argument: write_zipf_s must be 0 or greater than 1, got 0.5"
+
+  /ledger:
+    get:
+      tags: [Книга]
+      summary: Что лежит в книге ожидаемых балансов
+      responses:
+        "200":
+          description: Состояние книги
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ledger"
+        "503":
+          description: Книга ещё не загружена
+
+  /ledger/reload:
+    post:
+      tags: [Книга]
+      summary: Перечитать снапшот
+      description: Нужно после того, как кластер очистили и заново разложили по нодам тот же снапшот.
+      responses:
+        "200":
+          description: Книга после загрузки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ledger"
+        "500":
+          description: Снапшот не прочитался, например файла ещё нет
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /healthz:
+    get:
+      tags: [Loadgen]
+      summary: Жив ли процесс
+      responses:
+        "200":
+          description: Жив
+
+  /metrics:
+    get:
+      tags: [Loadgen]
+      summary: Метрики Prometheus
+      responses:
+        "200":
+          description: Метрики в текстовом формате Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  schemas:
+    Profile:
+      type: object
+      properties:
+        running:
+          type: boolean
+          description: Идёт ли нагрузка
+          example: true
+        rps:
+          type: integer
+          description: Операций в секунду
+          example: 1000
+        read_ratio:
+          type: number
+          description: Доля чтений, остальное — записи
+          example: 0.7
+        deposit_share:
+          type: number
+          description: Доля пополнений среди записей, остальное — списания
+          example: 0.5
+        read_zipf_s:
+          type: number
+          description: Перекос выбора пользователя для чтений. 0 — равномерно, больше 1 — горячие пользователи
+          example: 0
+        write_zipf_s:
+          type: number
+          description: Перекос выбора пользователя для записей. 0 — равномерно, больше 1 — горячие пользователи
+          example: 1.1
+        hot_share:
+          type: number
+          description: Доля записей, которые уходят одному мерчанту
+          example: 0.05
+        merchant_user_id:
+          type: integer
+          format: int64
+          example: 1000000
+        max_amount:
+          type: integer
+          format: int64
+          description: Верхняя граница суммы одной операции, в минимальных единицах валюты
+          example: 10000
+        verify_rps:
+          type: integer
+          description: Сколько раз в секунду перепроверять недавно изменённых пользователей
+          example: 50
+    Ledger:
+      type: object
+      properties:
+        users:
+          type: integer
+          example: 2000000
+        wallets:
+          type: integer
+          example: 5997465
+        money:
+          type: integer
+          format: int64
+          description: Сумма всех балансов, в минимальных единицах
+          example: 2998732416723
+        uncertain_users:
+          type: integer
+          description: Пользователи, по которым операция оборвалась и неизвестно, применилась ли она
+          example: 0
+    Error:
+      type: object
+      properties:
+        error:
+          type: string

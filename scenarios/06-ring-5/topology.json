@@ -1,0 +1,12 @@
+{
+  "strategy": "ring",
+  "vnodes": 256,
+  "migrate": true,
+  "nodes": [
+    {"id": "wallet-1", "addr": "http://wallet-1:8080", "weight": 1},
+    {"id": "wallet-2", "addr": "http://wallet-2:8080", "weight": 1},
+    {"id": "wallet-3", "addr": "http://wallet-3:8080", "weight": 1},
+    {"id": "wallet-4", "addr": "http://wallet-4:8080", "weight": 1},
+    {"id": "wallet-5", "addr": "http://wallet-5:8080", "weight": 1}
+  ]
+}

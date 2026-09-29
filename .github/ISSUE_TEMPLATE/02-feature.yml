@@ -1,0 +1,19 @@
+name: Предложение
+description: Новый сценарий, стратегия, метрика или команда
+labels: ["enhancement"]
+
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Что предлагаешь
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Зачем
+      description: Что сейчас нельзя сделать или показать на стенде и что станет возможно после изменения.
+    validations:
+      required: true

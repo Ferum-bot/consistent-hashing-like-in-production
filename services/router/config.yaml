@@ -1,0 +1,6 @@
+addr: ":8080"
+name: router-1
+users: 2000000
+snapshot_path: ../../data/snapshot.ndjson
+gate_timeout: 10s
+upstream_timeout: 5s

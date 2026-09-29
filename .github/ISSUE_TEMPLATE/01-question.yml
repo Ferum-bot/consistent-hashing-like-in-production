@@ -1,0 +1,17 @@
+name: Вопрос
+description: Как устроен стенд, почему он ведёт себя так, как запустить нужное
+labels: ["question"]
+
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Вопрос
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Контекст
+      description: Если вопрос про запуск — сценарий, команды и их вывод. Если про код — файл и функция.

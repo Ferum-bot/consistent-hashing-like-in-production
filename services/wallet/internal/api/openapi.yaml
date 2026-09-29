@@ -1,0 +1,371 @@
+openapi: 3.0.3
+
+info:
+  title: Wallet
+  version: 1.0.0
+  description: |
+    Микросервис кошельков со своим хранилищем в памяти.
+    Один экземпляр — одна шард-нода. Про шардирование нода не знает: хранит тех пользователей, которых ей прислали.
+
+servers:
+  - url: /
+
+tags:
+  - name: Кошельки
+    description: Операции с деньгами пользователя
+  - name: Миграция
+    description: Перенос пользователей между нодами
+  - name: Нода
+    description: Состояние ноды
+
+paths:
+  /wallet/{userID}:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+      - $ref: "#/components/parameters/TopologyVersion"
+    get:
+      tags: [Кошельки]
+      summary: Кошельки пользователя
+      responses:
+        "200":
+          description: Пользователь и его кошельки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StaleTopology"
+
+  /wallet/{userID}/deposit:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+      - $ref: "#/components/parameters/TopologyVersion"
+    post:
+      tags: [Кошельки]
+      summary: Пополнить кошелёк
+      description: Если пользователя или кошелька в этой валюте нет, они создаются.
+      requestBody:
+        $ref: "#/components/requestBodies/Operation"
+      responses:
+        "200":
+          $ref: "#/components/responses/Wallet"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/StaleTopology"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /wallet/{userID}/withdraw:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+      - $ref: "#/components/parameters/TopologyVersion"
+    post:
+      tags: [Кошельки]
+      summary: Списать с кошелька
+      description: Нельзя списать больше, чем есть на балансе. Кошелёк не создаётся.
+      requestBody:
+        $ref: "#/components/requestBodies/Operation"
+      responses:
+        "200":
+          $ref: "#/components/responses/Wallet"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StaleTopology"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+
+  /export:
+    get:
+      tags: [Миграция]
+      summary: Выгрузить всех пользователей ноды
+      description: По одному пользователю в JSON на строку, отсортированы по user_id.
+      responses:
+        "200":
+          description: Пользователи ноды
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+              example: |
+                {"user_id":1,"wallets":[{"currency":"USD","balance":1000}]}
+                {"user_id":2,"wallets":[{"currency":"EUR","balance":500}]}
+
+  /import:
+    parameters:
+      - $ref: "#/components/parameters/TopologyVersion"
+    post:
+      tags: [Миграция]
+      summary: Загрузить пользователей на ноду
+      description: Формат тот же, что у /export. Пользователь с тем же user_id заменяется целиком. Если хотя бы одна строка невалидна, не сохраняется ничего.
+      requestBody:
+        required: true
+        content:
+          application/x-ndjson:
+            schema:
+              type: string
+            example: |
+              {"user_id":1,"wallets":[{"currency":"USD","balance":1000}]}
+              {"user_id":2,"wallets":[{"currency":"EUR","balance":500}]}
+      responses:
+        "200":
+          description: Сколько пользователей загружено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                    example: 2
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/StaleTopology"
+
+  /evict:
+    parameters:
+      - $ref: "#/components/parameters/TopologyVersion"
+    post:
+      tags: [Миграция]
+      summary: Удалить пачку пользователей с ноды
+      description: Роутер вызывает её после переноса, чтобы убрать перенесённых пользователей со старой ноды. Отсутствующие пользователи пропускаются.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  example: [1, 2, 3]
+      responses:
+        "200":
+          description: Сколько пользователей удалено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  evicted:
+                    type: integer
+                    example: 3
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/StaleTopology"
+
+  /fence:
+    parameters:
+      - $ref: "#/components/parameters/TopologyVersion"
+    post:
+      tags: [Нода]
+      summary: Сообщить ноде версию топологии
+      description: |
+        Роутер вызывает её, когда в новой или прошлой топологии включена защита по версии. Нода запоминает версию и с этого момента отклоняет запросы со старой.
+        В строгом режиме нода отклоняет и запросы без версии: так отставший роутер, который версию не передаёт, не может ничего записать.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                strict:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: Что теперь знает нода
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topology_version:
+                    type: integer
+                    format: int64
+                    example: 7
+                  strict:
+                    type: boolean
+                    example: true
+        "409":
+          $ref: "#/components/responses/StaleTopology"
+
+  /stats:
+    get:
+      tags: [Нода]
+      summary: Имя ноды, версия топологии и сколько на ней данных
+      responses:
+        "200":
+          description: Состояние ноды
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
+  /healthz:
+    get:
+      tags: [Нода]
+      summary: Жив ли процесс
+      responses:
+        "200":
+          description: Жив
+
+  /metrics:
+    get:
+      tags: [Нода]
+      summary: Метрики Prometheus
+      responses:
+        "200":
+          description: Метрики в текстовом формате Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  parameters:
+    UserID:
+      name: userID
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 42
+    TopologyVersion:
+      name: X-Topology-Version
+      in: header
+      required: false
+      description: Версия топологии, по которой роутер выбрал ноду. Нода отклоняет запрос, если уже видела версию новее. Без заголовка запрос проходит, если нода не в строгом режиме.
+      schema:
+        type: integer
+        format: int64
+
+  requestBodies:
+    Operation:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Operation"
+
+  responses:
+    Wallet:
+      description: Кошелёк после операции
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Wallet"
+    BadRequest:
+      description: Неверные данные запроса
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "invalid argument: amount must be positive, got 0"
+    NotFound:
+      description: Пользователя или кошелька нет на этой ноде
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: user not found
+    StaleTopology:
+      description: Запрос пришёл со старой версией топологии. В заголовке X-Topology-Version — актуальная версия.
+      headers:
+        X-Topology-Version:
+          schema:
+            type: integer
+            format: int64
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: stale topology version
+    Unprocessable:
+      description: Не хватает денег или баланс переполнится
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "insufficient funds: balance 100, requested 150"
+
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          example: 42
+        wallets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Wallet"
+    Wallet:
+      type: object
+      properties:
+        currency:
+          type: string
+          example: USD
+        balance:
+          type: integer
+          format: int64
+          description: В минимальных единицах валюты — центах, копейках, иенах
+          example: 1500
+    Operation:
+      type: object
+      required: [currency, amount]
+      properties:
+        currency:
+          type: string
+          description: Три заглавные латинские буквы
+          example: USD
+        amount:
+          type: integer
+          format: int64
+          description: Больше нуля, в минимальных единицах валюты
+          example: 500
+    Stats:
+      type: object
+      properties:
+        node:
+          type: string
+          example: wallet-3
+        topology_version:
+          type: integer
+          format: int64
+          description: Самая новая версия топологии, которую видела нода
+          example: 0
+        strict:
+          type: boolean
+          description: Отклоняет ли нода запросы без версии топологии
+          example: false
+        users:
+          type: integer
+          example: 1
+        wallets:
+          type: integer
+          example: 2
+    Error:
+      type: object
+      properties:
+        error:
+          type: string

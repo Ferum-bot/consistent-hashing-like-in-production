@@ -1,0 +1,9 @@
+go 1.26
+
+use (
+	./services/libs
+	./services/loadgen
+	./services/router
+	./services/wallet
+	./tools
+)

@@ -1,0 +1,47 @@
+x-wallet: &wallet
+  build:
+    context: ..
+    dockerfile: wallet/Dockerfile
+  image: chexp/wallet
+  restart: unless-stopped
+
+services:
+  wallet-1:
+    <<: *wallet
+    environment: { NODE_ID: wallet-1 }
+    ports: ["9001:8080"]
+    networks:
+      default:
+        ipv4_address: 172.28.0.11
+
+  wallet-2:
+    <<: *wallet
+    environment: { NODE_ID: wallet-2 }
+    ports: ["9002:8080"]
+    networks:
+      default:
+        ipv4_address: 172.28.0.12
+
+  wallet-3:
+    <<: *wallet
+    environment: { NODE_ID: wallet-3 }
+    ports: ["9003:8080"]
+    networks:
+      default:
+        ipv4_address: 172.28.0.13
+
+  wallet-4:
+    <<: *wallet
+    environment: { NODE_ID: wallet-4 }
+    ports: ["9004:8080"]
+    networks:
+      default:
+        ipv4_address: 172.28.0.14
+
+  wallet-5:
+    <<: *wallet
+    environment: { NODE_ID: wallet-5 }
+    ports: ["9005:8080"]
+    networks:
+      default:
+        ipv4_address: 172.28.0.15

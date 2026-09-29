@@ -1,0 +1,582 @@
+openapi: 3.0.3
+
+info:
+  title: Router
+  version: 1.0.0
+  description: |
+    Роутер перед нодами кошельков. Для клиента выглядит как один сервис wallet,
+    а внутри по user_id выбирает ноду по текущей стратегии шардирования и пересылает запрос туда.
+
+servers:
+  - url: /
+
+tags:
+  - name: Кошельки
+    description: Те же операции, что у wallet. Роутер пересылает их на ноду-владельца
+  - name: Маршрутизация
+    description: Куда роутер отправляет пользователей
+  - name: Топология
+    description: Какие ноды в кластере и как по ним раскладываются пользователи
+  - name: Перенос
+    description: Смена топологии с переносом данных по фазам
+  - name: Роутер
+    description: Состояние роутера
+
+paths:
+  /wallet/{userID}:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+    get:
+      tags: [Кошельки]
+      summary: Кошельки пользователя
+      responses:
+        "200":
+          description: Ответ ноды-владельца
+          headers:
+            X-Routed-To:
+              $ref: "#/components/headers/RoutedTo"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Пользователя нет на ноде, куда его отправил роутер
+          headers:
+            X-Routed-To:
+              $ref: "#/components/headers/RoutedTo"
+        "409":
+          $ref: "#/components/responses/NodeFenced"
+        "502":
+          $ref: "#/components/responses/NodeUnavailable"
+        "503":
+          $ref: "#/components/responses/NoTopology"
+
+  /wallet/{userID}/deposit:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+    post:
+      tags: [Кошельки]
+      summary: Пополнить кошелёк
+      description: Если пользователя или кошелька в этой валюте нет на ноде, нода их создаёт.
+      requestBody:
+        $ref: "#/components/requestBodies/Operation"
+      responses:
+        "200":
+          $ref: "#/components/responses/Wallet"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/NodeFenced"
+        "502":
+          $ref: "#/components/responses/NodeUnavailable"
+        "503":
+          $ref: "#/components/responses/NotRouted"
+
+  /wallet/{userID}/withdraw:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+    post:
+      tags: [Кошельки]
+      summary: Списать с кошелька
+      requestBody:
+        $ref: "#/components/requestBodies/Operation"
+      responses:
+        "200":
+          $ref: "#/components/responses/Wallet"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Кошелька нет на ноде, куда его отправил роутер
+        "409":
+          $ref: "#/components/responses/NodeFenced"
+        "422":
+          description: Не хватает денег
+        "502":
+          $ref: "#/components/responses/NodeUnavailable"
+        "503":
+          $ref: "#/components/responses/NotRouted"
+
+  /locate/{userID}:
+    parameters:
+      - $ref: "#/components/parameters/UserID"
+    get:
+      tags: [Маршрутизация]
+      summary: На какую ноду роутер отправит пользователя
+      responses:
+        "200":
+          description: Маршрут пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Route"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          $ref: "#/components/responses/NoTopology"
+
+  /topology:
+    get:
+      tags: [Топология]
+      summary: Текущая топология
+      responses:
+        "200":
+          $ref: "#/components/responses/Topology"
+        "503":
+          $ref: "#/components/responses/NoTopology"
+    post:
+      tags: [Топология]
+      summary: Применить новую топологию
+      description: Роутер сразу переключается, данные остаются где были. Версия должна быть больше текущей. Обычно топологию применяет chctl, он же присваивает версию.
+      requestBody:
+        $ref: "#/components/requestBodies/Topology"
+      responses:
+        "200":
+          $ref: "#/components/responses/Topology"
+        "202":
+          $ref: "#/components/responses/Deferred"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "502":
+          $ref: "#/components/responses/AnnounceFailed"
+        "503":
+          $ref: "#/components/responses/TooManyDeferred"
+
+  /topology/prepare:
+    post:
+      tags: [Перенос]
+      summary: Подготовить новую топологию
+      description: |
+        Роутер запоминает новую топологию, но продолжает маршрутизировать по текущей.
+        Записи в пользователей, у которых сменится нода, ждут, пока топологию не переключат.
+        Чтения идут к текущему владельцу.
+      requestBody:
+        $ref: "#/components/requestBodies/Topology"
+      responses:
+        "200":
+          $ref: "#/components/responses/Topology"
+        "202":
+          $ref: "#/components/responses/Deferred"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "502":
+          $ref: "#/components/responses/AnnounceFailed"
+        "503":
+          $ref: "#/components/responses/TooManyDeferred"
+
+  /topology/commit:
+    post:
+      tags: [Перенос]
+      summary: Переключиться на подготовленную топологию
+      description: Ждавшие записи уходят к новым владельцам.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: integer
+                  format: int64
+                  example: 3
+      responses:
+        "200":
+          $ref: "#/components/responses/Topology"
+        "202":
+          $ref: "#/components/responses/Deferred"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Нет подготовленной топологии или у неё другая версия
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          $ref: "#/components/responses/TooManyDeferred"
+
+  /topology/abort:
+    post:
+      tags: [Перенос]
+      summary: Отменить подготовленную топологию
+      description: Роутер остаётся на текущей топологии, ждавшие записи уходят к текущим владельцам. Версия, которую уже видели ноды, не откатывается.
+      responses:
+        "200":
+          $ref: "#/components/responses/Topology"
+        "202":
+          $ref: "#/components/responses/Deferred"
+        "409":
+          description: Нечего отменять
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          $ref: "#/components/responses/AnnounceFailed"
+        "503":
+          $ref: "#/components/responses/TooManyDeferred"
+
+  /migrate:
+    post:
+      tags: [Перенос]
+      summary: Скопировать пользователей на новые ноды
+      description: Выгружает пользователей с нод текущей топологии и загружает тех, у кого сменится нода, их новым владельцам. Работает, только пока топология подготовлена.
+      responses:
+        "200":
+          $ref: "#/components/responses/Spread"
+        "409":
+          description: Топология не подготовлена или перенос отменили во время копирования
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          $ref: "#/components/responses/NodeUnavailable"
+        "503":
+          $ref: "#/components/responses/NoTopology"
+
+  /migrate/cleanup:
+    post:
+      tags: [Перенос]
+      summary: Удалить перенесённых пользователей со старых нод
+      description: Работает после переключения топологии. Если перенос отменили, ничего не удаляет.
+      responses:
+        "200":
+          description: Сколько пользователей удалено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: integer
+                    example: 400000
+        "409":
+          description: Топология ещё не переключена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          $ref: "#/components/responses/NodeUnavailable"
+        "503":
+          $ref: "#/components/responses/NoTopology"
+
+  /bootstrap:
+    post:
+      tags: [Топология]
+      summary: Разложить снапшот пользователей по нодам
+      description: Читает снапшот из файла и отправляет каждого пользователя на ноду-владельца по текущей топологии.
+      responses:
+        "200":
+          $ref: "#/components/responses/Spread"
+        "500":
+          description: Не удалось прочитать снапшот
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          $ref: "#/components/responses/NodeUnavailable"
+        "503":
+          $ref: "#/components/responses/NoTopology"
+
+  /healthz:
+    get:
+      tags: [Роутер]
+      summary: Жив ли процесс
+      responses:
+        "200":
+          description: Жив
+
+  /metrics:
+    get:
+      tags: [Роутер]
+      summary: Метрики Prometheus
+      responses:
+        "200":
+          description: Метрики в текстовом формате Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  parameters:
+    UserID:
+      name: userID
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 42
+
+  headers:
+    RoutedTo:
+      description: Нода, на которую роутер отправил запрос
+      schema:
+        type: string
+        example: wallet-2
+
+  requestBodies:
+    Topology:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Topology"
+    Operation:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [currency, amount]
+            properties:
+              currency:
+                type: string
+                example: USD
+              amount:
+                type: integer
+                format: int64
+                example: 500
+
+  responses:
+    Wallet:
+      description: Кошелёк после операции
+      headers:
+        X-Routed-To:
+          $ref: "#/components/headers/RoutedTo"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Wallet"
+    BadRequest:
+      description: Неверные данные запроса
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NodeUnavailable:
+      description: Нода не ответила
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "node unavailable: wallet-3: connection refused"
+    NotRouted:
+      description: |
+        Запрос до ноды не дошёл, его можно повторить. Либо пользователь переезжает на другую ноду дольше,
+        чем роутер готов ждать (тогда есть Retry-After), либо роутеру ещё не прислали топологию.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            example: 1
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "user is being migrated, retry later: user 42"
+    NodeFenced:
+      description: Нода отклонила запрос по версии топологии. Так отвечают отстающему роутеру, когда включена защита по версии
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "stale topology version: node is on 14, request has 13"
+    Conflict:
+      description: Версия не новее текущей или уже идёт перенос
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    AnnounceFailed:
+      description: Не все ноды приняли версию топологии, роутер остался на прежней
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyDeferred:
+      description: Отстающий роутер уже отложил слишком много изменений
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Topology:
+      description: Топология роутера после запроса
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Topology"
+    Spread:
+      description: Сколько пользователей и на какие ноды отправлено
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              users:
+                type: integer
+                example: 400000
+              per_node:
+                type: object
+                additionalProperties:
+                  type: integer
+                example:
+                  wallet-5: 400000
+    Deferred:
+      description: Роутер отстаёт и применит изменение позже
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              deferred_for:
+                type: string
+                example: 29.5s
+    NoTopology:
+      description: Роутеру ещё не прислали топологию
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: topology is not set
+
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          example: 42
+        wallets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Wallet"
+    Wallet:
+      type: object
+      properties:
+        currency:
+          type: string
+          example: USD
+        balance:
+          type: integer
+          format: int64
+          example: 1500
+    Route:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          example: 42
+        key:
+          type: string
+          description: Что хешируем
+          example: "42"
+        hash:
+          type: integer
+          format: uint64
+          example: 9338287593227487134
+        node:
+          type: string
+          example: wallet-2
+        addr:
+          type: string
+          example: http://wallet-2:8080
+        strategy:
+          type: string
+          example: mod
+        topology_version:
+          type: integer
+          format: int64
+          example: 2
+        point:
+          type: object
+          description: Только для ring. Первая точка кольца по часовой стрелке от хеша ключа — она и решает, чья нода
+          properties:
+            name:
+              type: string
+              example: wallet-2#0
+            node:
+              type: string
+              example: wallet-2
+            hash:
+              type: integer
+              format: uint64
+              example: 11298731540212843811
+    Topology:
+      type: object
+      required: [version, strategy, nodes]
+      properties:
+        version:
+          type: integer
+          format: int64
+          example: 2
+        pending_version:
+          type: integer
+          format: int64
+          description: Версия подготовленной, но ещё не переключённой топологии. Есть только во время переноса
+          example: 3
+        deferred_error:
+          type: string
+          description: Только у отстающего роутера. Почему не применилось последнее отложенное изменение
+          example: "prepare: wallet-5 answered 409"
+        strategy:
+          type: string
+          description: mod — hash % N, ring — кольцо consistent hashing
+          enum: [mod, ring]
+          example: ring
+        vnodes:
+          type: integer
+          description: Только для ring. Сколько точек на кольце у ноды с весом 1, у ноды с весом 2 — вдвое больше
+          minimum: 1
+          maximum: 10000
+          example: 1
+        fencing:
+          type: boolean
+          description: Защита по версии. Роутер ставит версию топологии на запросы к нодам, ноды отклоняют запросы со старой версией и без версии
+          example: false
+        membership_delay:
+          type: object
+          description: Роутер с этим именем применяет топологию с опозданием, до этого отвечает 202 и работает по старой
+          additionalProperties:
+            type: string
+          example:
+            router-2: 30s
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Node"
+    Node:
+      type: object
+      required: [id, addr]
+      properties:
+        id:
+          type: string
+          example: wallet-1
+        addr:
+          type: string
+          example: http://wallet-1:8080
+        weight:
+          type: integer
+          example: 1
+    Error:
+      type: object
+      properties:
+        error:
+          type: string

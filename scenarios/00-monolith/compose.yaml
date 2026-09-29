@@ -1,0 +1,17 @@
+name: consistent-hashing
+
+include:
+  - ../../infra/compose.yaml
+
+services:
+  wallet-1:
+    extends:
+      file: ../../services/wallet/compose.yaml
+      service: wallet-1
+
+  loadgen:
+    extends:
+      file: ../../services/loadgen/compose.yaml
+      service: loadgen
+    environment:
+      TARGETS: http://wallet-1:8080

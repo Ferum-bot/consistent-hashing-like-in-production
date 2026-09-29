@@ -1,0 +1,45 @@
+name: Ошибка
+description: Стенд, сервис или chctl ведут себя не так, как описано
+labels: ["bug"]
+
+body:
+  - type: input
+    id: scenario
+    attributes:
+      label: Сценарий
+      description: Папка из `scenarios`, на которой воспроизводится ошибка.
+      placeholder: 05-ring-256
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-did-you-do
+    attributes:
+      label: Что делал
+      description: Команды по порядку, начиная с `task fresh` или `task scenario`.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Что произошло
+      description: Вывод команд, ошибка chctl, вывод `task status`. Текст лучше скриншота; скриншот нужен, если проблема на панели Grafana.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Что ожидал
+      description: Что должно было произойти и почему.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Окружение
+      description: ОС, `go version`, `docker version`, `task --version`.
+      render: shell
